@@ -10,6 +10,23 @@ Every millisecond, Hyperliquid's order book tells a story: who's providing liqui
 
 ---
 
+## Methodology
+
+The analytical framework behind this project is derived from **[Reassessing Liquidity: Beyond Order Book Depth](https://www.cmegroup.com/articles/2025/reassessing-liquidity-beyond-order-book-depth.html)**, a whitepaper published by **CME Group** in 2025.
+
+The paper argues that traditional order book depth is a poor proxy for true market liquidity. Instead, CME proposes a more comprehensive evaluation framework built on the following pillars:
+
+- **Price Dispersion** — measures how scattered execution prices are within a time window, revealing the real "thickness" of liquidity
+- **Market Impact Cost** — quantifies the actual price impact of trades in both **bps and USD**, making hidden execution costs visible
+- **VWAP (Volume-Weighted Average Price)** — the volume-weighted average execution price, the gold standard for assessing fill quality
+- **Quote Fill Rate (QFR)** — the probability that passive orders get executed, distinguishing real liquidity from phantom quotes
+- **Market Efficiency Penalty (MEP)** — penalizes modifications and cancellations to quantify "fake liquidity" contributed by fleeting orders
+- **Sqrt Impact Model** — a square-root market impact model based on ADTV (Average Daily Trading Volume) for pre-trade cost estimation on large orders
+
+This tool **transplants the CME methodology from traditional futures markets to the Hyperliquid perpetual DEX**, computing these metrics in real time at sub-second resolution — bringing institutional-grade liquidity insight to on-chain traders.
+
+---
+
 ## Why This Exists
 
 | Problem | Solution |
