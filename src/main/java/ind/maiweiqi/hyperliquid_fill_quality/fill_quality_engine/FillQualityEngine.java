@@ -60,9 +60,9 @@ public class FillQualityEngine {
 
         // Unique prices via TreeSet for sorted order
         TreeSet<Double> priceSet = new TreeSet<>();
-        long totalVolume = 0;
-        long buyVolume = 0;
-        long sellVolume = 0;
+        double totalVolume = 0;
+        double buyVolume = 0;
+        double sellVolume = 0;
         double vwapNumerator = 0;
 
         for (Tick t : windowTicks) {
@@ -82,8 +82,8 @@ public class FillQualityEngine {
         double priceRangeAbs = highPrice - lowPrice;
         long priceRangeTicks = Math.round(priceRangeAbs / config.tickSize());
         double vwap = vwapNumerator / totalVolume;
-        long delta = buyVolume - sellVolume;
-        double deltaRatio = totalVolume > 0 ? (double) delta / totalVolume : 0.0;
+        double delta = buyVolume - sellVolume;
+        double deltaRatio = totalVolume > 0 ? delta / totalVolume : 0.0;
 
         // Impact cost (CME formula)
         double impactBps = priceLevels * config.tickSize() / config.refPrice() * 10_000;

@@ -2,7 +2,7 @@ package ind.maiweiqi.hyperliquid_fill_quality.fill_quality_engine.datatype;
 
 public record Tick(
         double price,
-        long volume,
+        double volume,
         long timestamp,
         Side side
 ) {

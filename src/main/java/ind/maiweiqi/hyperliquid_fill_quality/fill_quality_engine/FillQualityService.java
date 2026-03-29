@@ -149,10 +149,7 @@ public class FillQualityService implements SmartLifecycle, WsMessageListener, Ws
 
     private Tick toTick(WsTrade trade) {
         double price = Double.parseDouble(trade.px());
-        long volume = Math.round(Double.parseDouble(trade.sz()) * properties.getContractMultiplier());
-        if (volume <= 0) {
-            volume = 1;
-        }
+        double volume = Double.parseDouble(trade.sz()) * properties.getContractMultiplier();
         Side side = "B".equals(trade.side()) ? Side.BUY : Side.SELL;
         return new Tick(price, volume, trade.time(), side);
     }
@@ -165,7 +162,7 @@ public class FillQualityService implements SmartLifecycle, WsMessageListener, Ws
                 result.tickCount(),
                 result.impactBps(),
                 result.vwap(),
-                result.totalVolume()
+                String.format("%.4f", result.totalVolume())
         );
     }
 }

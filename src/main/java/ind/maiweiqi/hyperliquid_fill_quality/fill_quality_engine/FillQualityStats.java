@@ -10,7 +10,7 @@ public class FillQualityStats {
 
     // Lifetime counters
     private long totalTicks;
-    private long totalVolume;
+    private double totalVolume;
     private long totalWindows;
 
     // Rolling statistics

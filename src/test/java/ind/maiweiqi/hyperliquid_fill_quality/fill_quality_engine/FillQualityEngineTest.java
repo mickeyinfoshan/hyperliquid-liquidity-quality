@@ -34,10 +34,10 @@ class FillQualityEngineTest {
         assertEquals(1, r.priceLevels());
         assertEquals(0, r.priceRangeTicks());
         assertEquals(50000.0, r.vwap());
-        assertEquals(5, r.totalVolume());
-        assertEquals(5, r.buyVolume());
-        assertEquals(0, r.sellVolume());
-        assertEquals(5, r.delta());
+        assertEquals(5.0, r.totalVolume(), 0.0001);
+        assertEquals(5.0, r.buyVolume(), 0.0001);
+        assertEquals(0.0, r.sellVolume(), 0.0001);
+        assertEquals(5.0, r.delta(), 0.0001);
         assertEquals(1, r.tickCount());
         assertEquals(QualityGrade.EXCELLENT, r.qualityGrade());
     }
@@ -52,10 +52,10 @@ class FillQualityEngineTest {
 
         assertEquals(3, r.priceLevels());
         assertEquals(3, r.priceRangeTicks()); // 0.3 / 0.1 = 3
-        assertEquals(18, r.totalVolume());
-        assertEquals(13, r.buyVolume());
-        assertEquals(5, r.sellVolume());
-        assertEquals(8, r.delta());
+        assertEquals(18.0, r.totalVolume(), 0.0001);
+        assertEquals(13.0, r.buyVolume(), 0.0001);
+        assertEquals(5.0, r.sellVolume(), 0.0001);
+        assertEquals(8.0, r.delta(), 0.0001);
         assertEquals(3, r.tickCount());
         assertTrue(r.impactBps() > 0);
         assertEquals(List.of(50000.0, 50000.1, 50000.3), r.uniquePrices());
@@ -80,7 +80,7 @@ class FillQualityEngineTest {
         WindowResult r = engine.processWindow(6000);
 
         assertEquals(1, r.tickCount());
-        assertEquals(5, r.totalVolume());
+        assertEquals(5.0, r.totalVolume(), 0.0001);
     }
 
     @Test
@@ -178,7 +178,7 @@ class FillQualityEngineTest {
     void windowResult_uniquePricesDefensivelyCopied() {
         List<Double> prices = new ArrayList<>(List.of(1.0, 2.0));
         WindowResult r = new WindowResult(0, 1000, 2, 1, 1.0, 0.5, 0.1,
-                10, 2, 1.5, 2.0, 1.0, 5, 5, 0, 0.0,
+                10.0, 2, 1.5, 2.0, 1.0, 5.0, 5.0, 0.0, 0.0,
                 QualityGrade.EXCELLENT, prices);
 
         assertThrows(UnsupportedOperationException.class, () -> r.uniquePrices().add(3.0));
