@@ -4,8 +4,7 @@ public record Tick(
         double price,
         long volume,
         long timestamp,
-        Side side,
-        String orderId
+        Side side
 ) {
     public Tick {
         if (volume <= 0) {
@@ -17,12 +16,5 @@ public record Tick(
         if (side == null) {
             throw new IllegalArgumentException("side must not be null");
         }
-        if (orderId == null) {
-            orderId = "";
-        }
-    }
-
-    public Tick(double price, long volume, long timestamp, Side side) {
-        this(price, volume, timestamp, side, "");
     }
 }

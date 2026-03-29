@@ -23,7 +23,4 @@ public enum QualityGrade {
         return VERY_POOR;
     }
 
-    public double getMaxPriceLevels() {
-        return maxPriceLevels;
-    }
 }

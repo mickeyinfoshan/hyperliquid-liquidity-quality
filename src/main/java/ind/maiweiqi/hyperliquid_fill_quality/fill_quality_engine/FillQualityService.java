@@ -121,12 +121,6 @@ public class FillQualityService implements SmartLifecycle, WsMessageListener, Ws
         }
     }
 
-    // --- Accessors ---
-
-    public FillQualityEngine getEngine() {
-        return engine;
-    }
-
     // --- Internal ---
 
     private void subscribe() {
@@ -160,7 +154,7 @@ public class FillQualityService implements SmartLifecycle, WsMessageListener, Ws
             volume = 1;
         }
         Side side = "B".equals(trade.side()) ? Side.BUY : Side.SELL;
-        return new Tick(price, volume, trade.time(), side, String.valueOf(trade.tid()));
+        return new Tick(price, volume, trade.time(), side);
     }
 
     private void onWindowProcessed(WindowResult result) {

@@ -46,7 +46,7 @@ ind.maiweiqi.hyperliquid_fill_quality
 │   ├── WindowProcessedListener    # Observer callback for window results
 │   └── datatype/                  # Immutable records + enums
 │       ├── Tick, ProductConfig, WindowResult (records)
-│       └── Side, OrderEventType, QualityGrade (enums)
+│       └── Side, QualityGrade (enums)
 └── hyperliquid/                   # Exchange WebSocket integration
     ├── HyperliquidWebSocketClient # WebSocket handler (SmartLifecycle), auto-reconnect with backoff
     ├── HyperliquidWebSocketProperties # @ConfigurationProperties for hyperliquid.ws.*
@@ -89,5 +89,5 @@ Properties in `application.yaml`:
 
 ## Testing
 
-- `FillQualityEngineTest` — 24 unit tests covering window processing, VWAP, impact, delta, quality grades, rolling stats, order events, sqrt impact model, input validation, defensive copying
+- `FillQualityEngineTest` — 14 unit tests covering window processing, VWAP, impact, delta, quality grades, rolling stats, input validation, defensive copying
 - `HyperliquidFillQualityApplicationTests` — Spring context load test

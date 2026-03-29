@@ -4,13 +4,13 @@ Core engine for analyzing trade fill quality using time-windowed metrics.
 
 ## Key Classes
 
-- **FillQualityEngine** — Processes raw `Tick` data into `WindowResult` snapshots. Accumulates ticks, builds sorted price levels via `TreeSet`, computes VWAP, impact (CME sqrt model), and dispersion per window. Notifies registered `WindowProcessedListener`s.
-- **FillQualityStats** — Maintains lifetime and rolling statistics using a 30-window circular buffer. Tracks order events (submitted/filled/cancelled/modified), rolling averages for dispersion and impact, QFR (Quality Fill Ratio) and MEP (Message Efficiency Penalty).
+- **FillQualityEngine** — Processes raw `Tick` data into `WindowResult` snapshots. Accumulates ticks, builds sorted price levels via `TreeSet`, computes VWAP, impact (CME formula), and dispersion per window. Notifies registered `WindowProcessedListener`s.
+- **FillQualityStats** — Maintains lifetime and rolling statistics using a 30-window circular buffer. Tracks rolling averages for dispersion and impact, max values.
 - **WindowProcessedListener** — Functional interface (observer pattern) for window completion events.
 
 ## Sub-packages
 
-- `datatype/` — Immutable records (`Tick`, `WindowResult`, `ProductConfig`) and enums (`Side`, `OrderEventType`, `QualityGrade`).
+- `datatype/` — Immutable records (`Tick`, `WindowResult`, `ProductConfig`) and enums (`Side`, `QualityGrade`).
 
 ## Design Notes
 

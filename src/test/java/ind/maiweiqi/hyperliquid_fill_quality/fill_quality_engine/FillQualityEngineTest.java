@@ -114,19 +114,6 @@ class FillQualityEngineTest {
     }
 
     @Test
-    void processAllPending_generatesCorrectWindows() {
-        // Ticks spanning 3 seconds with 1s window
-        engine.addTick(new Tick(50000.0, 5, 1100, Side.BUY));
-        engine.addTick(new Tick(50000.1, 3, 2100, Side.SELL));
-        engine.addTick(new Tick(50000.2, 7, 3100, Side.BUY));
-
-        List<WindowResult> results = engine.processAllPending();
-
-        assertTrue(results.size() >= 2);
-        assertEquals(results.size(), engine.getResults().size());
-    }
-
-    @Test
     void listenerReceivesWindowResult() {
         List<WindowResult> received = new ArrayList<>();
         engine.addListener(received::add);
@@ -136,22 +123,6 @@ class FillQualityEngineTest {
 
         assertEquals(1, received.size());
         assertEquals(1, received.get(0).priceLevels());
-    }
-
-    @Test
-    void removeListenerStopsNotifications() {
-        List<WindowResult> received = new ArrayList<>();
-        WindowProcessedListener listener = received::add;
-        engine.addListener(listener);
-
-        engine.addTick(new Tick(50000.0, 5, 5500, Side.BUY));
-        engine.processWindow(6000);
-        assertEquals(1, received.size());
-
-        engine.removeListener(listener);
-        engine.addTick(new Tick(50000.0, 5, 7500, Side.BUY));
-        engine.processWindow(8000);
-        assertEquals(1, received.size()); // still 1
     }
 
     @Test
@@ -166,51 +137,6 @@ class FillQualityEngineTest {
         assertEquals(35, stats.getTotalWindows());
         assertTrue(stats.getAvgDispersion30() > 0);
         assertTrue(stats.getMaxDispersion() >= 1);
-    }
-
-    @Test
-    void orderEventTracking() {
-        engine.addOrderEvent(OrderEventType.SUBMITTED, 100);
-        engine.addOrderEvent(OrderEventType.FILLED, 60);
-        engine.addOrderEvent(OrderEventType.CANCELLED, 10);
-        engine.addOrderEvent(OrderEventType.MODIFIED, 5);
-
-        FillQualityStats stats = engine.getStats();
-        assertEquals(100, stats.getOrdersSubmitted());
-        assertEquals(60, stats.getOrdersFilled());
-        assertEquals(10, stats.getOrdersCancelled());
-        assertEquals(5, stats.getOrdersModified());
-        assertEquals(60.0, stats.getQfrPct(), 0.01);
-        // MEP = (5 * 1 + 10 * 3) / 60 = 35/60 ≈ 0.58
-        assertEquals(0.58, stats.getMepRatio(), 0.01);
-    }
-
-    @Test
-    void sqrtImpactModel_knownValues() {
-        double result = FillQualityEngine.sqrtImpactModel(
-                1_000_000, 10_000_000, 0.02, 0.001, 1.0);
-        // spread + 1.0 * 0.02 * sqrt(1M/10M) = 0.001 + 0.02 * sqrt(0.1)
-        // = 0.001 + 0.02 * 0.31623 = 0.001 + 0.006325 = 0.007325
-        assertEquals(0.007325, result, 0.0001);
-    }
-
-    @Test
-    void sqrtImpactModel_zeroAdtv_returnsSpreaCost() {
-        assertEquals(0.005, FillQualityEngine.sqrtImpactModel(100, 0, 0.02, 0.005, 1.0));
-    }
-
-    @Test
-    void reset_clearsAllState() {
-        engine.addTick(new Tick(50000.0, 5, 5500, Side.BUY));
-        engine.processWindow(6000);
-        engine.addOrderEvent(OrderEventType.SUBMITTED, 10);
-
-        engine.reset();
-
-        assertEquals(0, engine.getResults().size());
-        assertEquals(0, engine.getStats().getTotalWindows());
-        assertEquals(0, engine.getStats().getTotalTicks());
-        assertEquals(0, engine.getStats().getOrdersSubmitted());
     }
 
     @Test

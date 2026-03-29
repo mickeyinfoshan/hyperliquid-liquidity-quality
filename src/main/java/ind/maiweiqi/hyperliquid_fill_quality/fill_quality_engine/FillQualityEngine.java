@@ -10,7 +10,6 @@ public class FillQualityEngine {
     private final ProductConfig config;
     private final long windowDurationMs;
     private final List<Tick> pendingTicks = new ArrayList<>();
-    private final List<WindowResult> results = new ArrayList<>();
     private final List<WindowProcessedListener> listeners = new CopyOnWriteArrayList<>();
     private final FillQualityStats stats = new FillQualityStats();
     private long lastWindowEnd = -1;
@@ -35,15 +34,6 @@ public class FillQualityEngine {
     public void addTick(Tick tick) {
         pendingTicks.add(tick);
         stats.incrementTotalTicks(1);
-    }
-
-    public void addTicks(List<Tick> ticks) {
-        pendingTicks.addAll(ticks);
-        stats.incrementTotalTicks(ticks.size());
-    }
-
-    public void addOrderEvent(OrderEventType type, long count) {
-        stats.recordOrderEvent(type, count);
     }
 
     // --- Core Computation ---
@@ -115,7 +105,6 @@ public class FillQualityEngine {
                 new ArrayList<>(priceSet)
         );
 
-        results.add(result);
         lastWindowEnd = windowEnd;
         stats.updateFromWindow(result);
 
@@ -126,56 +115,10 @@ public class FillQualityEngine {
         return result;
     }
 
-    public List<WindowResult> processAllPending() {
-        if (pendingTicks.isEmpty()) {
-            return List.of();
-        }
-
-        long earliest = Long.MAX_VALUE;
-        long latest = Long.MIN_VALUE;
-        for (Tick t : pendingTicks) {
-            if (t.timestamp() < earliest) earliest = t.timestamp();
-            if (t.timestamp() > latest) latest = t.timestamp();
-        }
-
-        long start = lastWindowEnd >= 0 ? lastWindowEnd : earliest;
-        long current = start + windowDurationMs;
-
-        List<WindowResult> processed = new ArrayList<>();
-        while (current <= latest + windowDurationMs) {
-            WindowResult r = processWindow(current);
-            if (r != null) {
-                processed.add(r);
-            }
-            current += windowDurationMs;
-        }
-        return processed;
-    }
-
-    // --- Impact Model ---
-
-    public static double sqrtImpactModel(double orderQtyUsd, double adtv,
-                                          double dailyVol, double spreadCost,
-                                          double factor) {
-        if (adtv <= 0) {
-            return spreadCost;
-        }
-        return spreadCost + factor * dailyVol * Math.sqrt(orderQtyUsd / adtv);
-    }
-
-    public static double sqrtImpactModel(double orderQtyUsd, double adtv,
-                                          double dailyVol, double spreadCost) {
-        return sqrtImpactModel(orderQtyUsd, adtv, dailyVol, spreadCost, 1.0);
-    }
-
     // --- Observer Pattern ---
 
     public void addListener(WindowProcessedListener listener) {
         listeners.add(listener);
-    }
-
-    public void removeListener(WindowProcessedListener listener) {
-        listeners.remove(listener);
     }
 
     // --- Accessors ---
@@ -184,30 +127,9 @@ public class FillQualityEngine {
         return stats;
     }
 
-    public List<WindowResult> getResults() {
-        return Collections.unmodifiableList(results);
-    }
-
-    public ProductConfig getConfig() {
-        return config;
-    }
-
-    public long getWindowDurationMs() {
-        return windowDurationMs;
-    }
-
-    // --- Reset ---
-
-    public void reset() {
-        pendingTicks.clear();
-        results.clear();
-        stats.reset();
-        lastWindowEnd = -1;
-    }
-
     @Override
     public String toString() {
         return "FillQualityEngine('%s', window=%dms, windows=%d, ticks=%d)"
-                .formatted(config.symbol(), windowDurationMs, results.size(), stats.getTotalTicks());
+                .formatted(config.symbol(), windowDurationMs, stats.getTotalWindows(), stats.getTotalTicks());
     }
 }
