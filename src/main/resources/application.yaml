@@ -1,6 +1,6 @@
 spring:
   application:
-    name: hyperliquid-fill-quality
+    name: hyperliquid-liquidity-quality
 
 hyperliquid:
   ws:
@@ -9,7 +9,7 @@ hyperliquid:
     max-reconnect-delay-ms: 60000
     ping-interval-ms: 30000
 
-fill-quality:
+liquidity-quality:
   symbol: BTC
   tick-size: 0.1
   ref-price: 87000.0

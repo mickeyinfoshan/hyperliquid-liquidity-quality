@@ -1,0 +1,20 @@
+package ind.maiweiqi.hyperliquid_liquidity_quality.liquidity_quality_engine.datatype;
+
+public record Tick(
+        double price,
+        double volume,
+        long timestamp,
+        Side side
+) {
+    public Tick {
+        if (volume <= 0) {
+            throw new IllegalArgumentException("volume must be positive");
+        }
+        if (timestamp <= 0) {
+            throw new IllegalArgumentException("timestamp must be positive");
+        }
+        if (side == null) {
+            throw new IllegalArgumentException("side must not be null");
+        }
+    }
+}

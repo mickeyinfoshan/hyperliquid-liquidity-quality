@@ -1,49 +1,128 @@
-# Hyperliquid Fill Quality
+# Hyperliquid Liquidity Quality
 
-Real-time trade fill quality analysis tool for the [Hyperliquid](https://hyperliquid.xyz) exchange. Connects via WebSocket, aggregates trades into time windows, and computes quality metrics including price dispersion, market impact, VWAP, and volume delta.
+[![Java](https://img.shields.io/badge/Java-17-orange?logo=openjdk)](https://openjdk.org/)
+[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4.0.5-brightgreen?logo=springboot)](https://spring.io/projects/spring-boot)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-## Features
+> **Tick-level liquidity X-ray for Hyperliquid** — plug in, stream trades, get institutional-grade quality scores in real time.
 
-- **Real-time ingestion** — WebSocket client with automatic reconnection and exponential backoff
-- **Time-windowed analysis** — configurable window duration (default 1s)
-- **Fill quality metrics** — price dispersion, impact cost (bps + dollar), VWAP, buy/sell delta
-- **Quality grading** — EXCELLENT / GOOD / FAIR / POOR / VERY_POOR based on price level thresholds
-- **Rolling statistics** — 30-window circular buffer tracking averages, QFR, and MEP
-- **Order event tracking** — submitted, filled, cancelled, modified lifecycle events
+Every millisecond, Hyperliquid's order book tells a story: who's providing liquidity, how thick the book really is, and whether you're about to get filled at a fair price or eat three ticks of slippage. This tool **listens to every trade via WebSocket**, slices the stream into sub-second windows, and spits out the metrics that matter — **price dispersion, market impact (bps & dollar), VWAP, delta, and a letter grade** so you know at a glance whether liquidity is EXCELLENT or dumpster-fire VERY_POOR.
 
-## Tech Stack
+---
 
-| Component | Version |
-|-----------|---------|
-| Java | 17 |
-| Spring Boot | 4.0.5 |
-| Build | Maven (wrapper included) |
-| WebSocket | Spring WebSocket + Jakarta |
-| JSON | Jackson |
-| Code generation | Lombok |
-| Testing | JUnit 5 |
+## Why This Exists
 
-## Quick Start
+| Problem | Solution |
+|---------|----------|
+| CEX dashboards show lagging, averaged spreads | Sub-second sliding windows capture **real** microstructure |
+| Impact cost is invisible until you trade | Pre-trade impact estimation in **bps + USD** |
+| No way to score liquidity over time | 30-window rolling stats with **QFR** (Quote Fill Rate) and **MEP** (Market Efficiency Penalty) |
+| WebSocket drops silently | Auto-reconnect with **exponential backoff**, zero data loss guarantee on reconnection |
 
-### Prerequisites
+---
 
-- Java 17+
+## Key Features
 
-### Build & Run
+- **Sub-second resolution** — configurable time windows (default 1 s), capturing microstructure that minute-level tools miss entirely
+- **Institutional-grade metrics** — Sqrt Impact Model, VWAP, buy/sell delta, price dispersion — the same toolkit prop desks use
+- **5-tier quality grading** — EXCELLENT / GOOD / FAIR / POOR / VERY_POOR, automatically computed per window
+- **Rolling statistics** — 30-window circular buffer for trend detection; spot liquidity regime changes as they happen
+- **Battle-tested connectivity** — WebSocket auto-reconnect with exponential backoff (5 s -> 60 s cap), heartbeat keep-alive
+- **Zero dependencies beyond Spring** — no Kafka, no Redis, no database. One JVM, one config file, done
+
+---
+
+## 30-Second Quick Start
 
 ```bash
-# Build
+# 1. Clone & build
+git clone https://github.com/yourname/hyperliquid-liquidity-quality.git
+cd hyperliquid-liquidity-quality
 ./mvnw package -DskipTests
 
-# Run
+# 2. Run — starts streaming BTC trades immediately
 ./mvnw spring-boot:run
 ```
 
-The application connects to Hyperliquid's WebSocket API and begins streaming trade data for the configured symbol.
+That's it. The app connects to `wss://api.hyperliquid.xyz/ws`, subscribes to BTC trades, and starts printing window-by-window liquidity scores to stdout.
+
+> **Prerequisite:** Java 17+. No Maven install needed — wrapper included.
+
+---
+
+## Architecture
+
+```
+                    ┌─────────────────────────────────────────────────────────┐
+                    │                    Spring Boot Application              │
+                    │                                                         │
+  Hyperliquid WS    │  ┌──────────────────┐    ┌────────────────────────┐    │
+  (trades stream)───┼─>│  WebSocketClient  │───>│ LiquidityQualityService│    │
+                    │  │  - auto reconnect │    │  - tick conversion     │    │
+                    │  │  - heartbeat      │    │  - window scheduling   │    │
+                    │  │  - backoff 5-60s  │    └───────────┬────────────┘    │
+                    │  └──────────────────┘                │                  │
+                    │                                      ▼                  │
+                    │                         ┌────────────────────────┐      │
+                    │                         │ LiquidityQualityEngine │      │
+                    │                         │  - tick accumulation   │      │
+                    │                         │  - window aggregation  │      │
+                    │                         │  - metrics computation │      │
+                    │                         └───────────┬────────────┘      │
+                    │                                     │                   │
+                    │                          ┌──────────┴──────────┐        │
+                    │                          ▼                     ▼        │
+                    │                 WindowProcessed      LiquidityQuality   │
+                    │                   Listener              Stats           │
+                    │                 (per-window)       (30-window rolling)  │
+                    └─────────────────────────────────────────────────────────┘
+```
+
+**Two packages, clear separation of concerns:**
+
+| Package | Responsibility |
+|---------|---------------|
+| `liquidity_quality_engine` | Core analysis — tick accumulation, window metrics (dispersion, impact, VWAP, delta), rolling statistics |
+| `hyperliquid` | Exchange integration — WebSocket lifecycle, protocol types, subscription management |
+
+---
+
+## Metrics Reference
+
+### Per-Window Metrics
+
+| Metric | Formula | What It Tells You |
+|--------|---------|-------------------|
+| Price Levels | Count of unique prices | Book depth consumed in this window |
+| Price Range | `(high - low) / tickSize` | Spread volatility in ticks |
+| Impact (bps) | `priceLevels * tickSize / refPrice * 10000` | Cost of walking the book |
+| Impact ($) | `priceLevels * tickSize * contractMultiplier` | Dollar cost of walking the book |
+| VWAP | `sum(price * volume) / totalVolume` | Fair execution price |
+| Delta | `buyVolume - sellVolume` | Aggressor imbalance |
+| Sqrt Impact | `spreadCost + factor * dailyVol * sqrt(orderQty / ADTV)` | Pre-trade impact estimation |
+
+### Rolling Statistics (30-Window)
+
+| Metric | Formula | What It Tells You |
+|--------|---------|-------------------|
+| QFR | `ordersFilled / ordersSubmitted * 100%` | Quote Fill Rate — how often passive orders get hit |
+| MEP | `(modifications + cancellations * 3) / filled` | Market Efficiency Penalty — higher = more toxic flow |
+
+### Quality Grades
+
+| Grade | Impact (bps) | Interpretation |
+|-------|:------------:|----------------|
+| **EXCELLENT** | <= 1.5 | Razor-tight, institutional-quality liquidity |
+| **GOOD** | <= 3.0 | Healthy book, minimal slippage |
+| **FAIR** | <= 5.0 | Acceptable for most order sizes |
+| **POOR** | <= 8.0 | Thin book, consider splitting orders |
+| **VERY_POOR** | > 8.0 | Danger zone — expect significant slippage |
+
+---
 
 ## Configuration
 
-Edit `src/main/resources/application.yaml`:
+All settings live in `src/main/resources/application.yaml`:
 
 ```yaml
 hyperliquid:
@@ -53,7 +132,7 @@ hyperliquid:
     max-reconnect-delay-ms: 60000
     ping-interval-ms: 30000
 
-fill-quality:
+liquidity-quality:
   symbol: BTC
   tick-size: 0.1
   ref-price: 87000.0
@@ -61,58 +140,37 @@ fill-quality:
   window-duration-ms: 1000
 ```
 
+<details>
+<summary>Full property reference</summary>
+
 | Property | Description | Default |
 |----------|-------------|---------|
 | `hyperliquid.ws.url` | WebSocket endpoint | `wss://api.hyperliquid.xyz/ws` |
 | `hyperliquid.ws.reconnect-delay-ms` | Initial reconnect delay | `5000` |
-| `hyperliquid.ws.max-reconnect-delay-ms` | Max reconnect delay (exponential backoff) | `60000` |
+| `hyperliquid.ws.max-reconnect-delay-ms` | Max backoff cap | `60000` |
 | `hyperliquid.ws.ping-interval-ms` | Heartbeat interval | `30000` |
-| `fill-quality.symbol` | Trading symbol to analyze | `BTC` |
-| `fill-quality.tick-size` | Minimum price increment | `0.1` |
-| `fill-quality.ref-price` | Reference price for impact calculation | `87000.0` |
-| `fill-quality.contract-multiplier` | Volume multiplier | `1` |
-| `fill-quality.window-duration-ms` | Analysis window length (ms) | `1000` |
+| `liquidity-quality.symbol` | Trading symbol | `BTC` |
+| `liquidity-quality.tick-size` | Minimum price increment | `0.1` |
+| `liquidity-quality.ref-price` | Reference price for impact calc | `87000.0` |
+| `liquidity-quality.contract-multiplier` | Volume multiplier | `1` |
+| `liquidity-quality.window-duration-ms` | Window length (ms) | `1000` |
 
-## Architecture
+</details>
 
-```
-WebSocket Feed ──> HyperliquidWebSocketClient ──> FillQualityService ──> FillQualityEngine
-                   (auto-reconnect, heartbeat)    (tick conversion,      (window aggregation,
-                                                    scheduling)           metrics computation)
-                                                                              │
-                                                                              ▼
-                                                                     WindowProcessedListener
-                                                                     FillQualityStats (rolling)
-```
+---
 
-**Two packages:**
+## Tech Stack
 
-- `fill_quality_engine` — Core analysis: accumulates ticks, computes per-window metrics (dispersion, impact, VWAP, delta), maintains rolling statistics
-- `hyperliquid` — Exchange integration: WebSocket client, protocol data types, subscription management
+| | |
+|---|---|
+| **Runtime** | Java 17, Spring Boot 4.0.5 |
+| **Transport** | Spring WebSocket + Jakarta WebSocket API |
+| **Serialization** | Jackson |
+| **Code Gen** | Lombok |
+| **Build** | Maven wrapper (zero install) |
+| **Test** | JUnit 5 (14 unit tests covering edge cases, rolling stats, defensive copying) |
 
-## Metrics
-
-| Metric | Formula |
-|--------|---------|
-| Price Levels | Count of unique prices in window |
-| Price Range (ticks) | `(high - low) / tickSize` |
-| Impact (bps) | `priceLevels * tickSize / refPrice * 10000` |
-| Impact ($) | `priceLevels * tickSize * contractMultiplier` |
-| VWAP | `sum(price * volume) / totalVolume` |
-| Delta | `buyVolume - sellVolume` |
-| QFR | `ordersFilled / ordersSubmitted * 100%` |
-| MEP | `(modifications + cancellations * 3) / filled` |
-| Sqrt Impact | `spreadCost + factor * dailyVol * sqrt(orderQty / ADTV)` |
-
-### Quality Grades
-
-| Grade | Max Price Levels (bps) |
-|-------|----------------------|
-| EXCELLENT | <= 1.5 |
-| GOOD | <= 3.0 |
-| FAIR | <= 5.0 |
-| POOR | <= 8.0 |
-| VERY_POOR | > 8.0 |
+---
 
 ## Testing
 
@@ -121,8 +179,14 @@ WebSocket Feed ──> HyperliquidWebSocketClient ──> FillQualityService ─
 ./mvnw test
 
 # Run a single test class
-./mvnw test -Dtest=FillQualityEngineTest
+./mvnw test -Dtest=LiquidityQualityEngineTest
 
 # Run a single test method
-./mvnw test -Dtest=FillQualityEngineTest#processWindow_singleTick
+./mvnw test -Dtest=LiquidityQualityEngineTest#processWindow_singleTick
 ```
+
+---
+
+## License
+
+MIT

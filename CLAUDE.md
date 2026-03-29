@@ -4,9 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Hyperliquid fill quality analysis tool — a Spring Boot 4.0.5 application (Java 17) that ingests real-time trade data via WebSocket from the Hyperliquid exchange, aggregates trades into time windows, and computes fill quality metrics (price dispersion, impact cost, VWAP, delta, quality grades).
+Hyperliquid liquidity quality analysis tool — a Spring Boot 4.0.5 application (Java 17) that ingests real-time trade data via WebSocket from the Hyperliquid exchange, aggregates trades into time windows, and computes liquidity quality metrics (price dispersion, impact cost, VWAP, delta, quality grades).
 
-**Base package:** `ind.maiweiqi.hyperliquid_fill_quality` (note: underscores, not hyphens)
+**Base package:** `ind.maiweiqi.hyperliquid_liquidity_quality` (note: underscores, not hyphens)
 
 ## Build & Run Commands
 
@@ -21,10 +21,10 @@ Hyperliquid fill quality analysis tool — a Spring Boot 4.0.5 application (Java
 ./mvnw test
 
 # Run a single test class
-./mvnw test -Dtest=FillQualityEngineTest
+./mvnw test -Dtest=LiquidityQualityEngineTest
 
 # Run a single test method
-./mvnw test -Dtest=FillQualityEngineTest#processWindow_singleTick
+./mvnw test -Dtest=LiquidityQualityEngineTest#processWindow_singleTick
 ```
 
 ## Architecture
@@ -37,12 +37,12 @@ Hyperliquid fill quality analysis tool — a Spring Boot 4.0.5 application (Java
 ### Package Structure
 
 ```
-ind.maiweiqi.hyperliquid_fill_quality
-├── fill_quality_engine/           # Core analysis engine
-│   ├── FillQualityEngine          # Accumulates ticks, computes per-window metrics
-│   ├── FillQualityService         # Spring service (SmartLifecycle), bridges WS to engine
-│   ├── FillQualityStats           # Lifetime + 30-window rolling statistics (circular buffer)
-│   ├── FillQualityProperties      # @ConfigurationProperties for fill-quality.*
+ind.maiweiqi.hyperliquid_liquidity_quality
+├── liquidity_quality_engine/           # Core analysis engine
+│   ├── LiquidityQualityEngine          # Accumulates ticks, computes per-window metrics
+│   ├── LiquidityQualityService         # Spring service (SmartLifecycle), bridges WS to engine
+│   ├── LiquidityQualityStats           # Lifetime + 30-window rolling statistics (circular buffer)
+│   ├── LiquidityQualityProperties      # @ConfigurationProperties for liquidity-quality.*
 │   ├── WindowProcessedListener    # Observer callback for window results
 │   └── datatype/                  # Immutable records + enums
 │       ├── Tick, ProductConfig, WindowResult (records)
@@ -61,7 +61,7 @@ ind.maiweiqi.hyperliquid_fill_quality
 ### Key Design Patterns
 
 - **Observer:** WindowProcessedListener, WsMessageListener, WsConnectionListener
-- **SmartLifecycle ordering:** WS client (phase=MAX_VALUE) starts first, then FillQualityService (phase=MAX_VALUE-1)
+- **SmartLifecycle ordering:** WS client (phase=MAX_VALUE) starts first, then LiquidityQualityService (phase=MAX_VALUE-1)
 - **Thread safety:** `synchronized` on engine instance, `CopyOnWriteArrayList` for listeners, `volatile` session
 - **Records:** All data types are immutable records with compact constructors for validation
 
@@ -75,7 +75,7 @@ Properties in `application.yaml`:
 | | `reconnect-delay-ms` | `5000` | Initial reconnect delay |
 | | `max-reconnect-delay-ms` | `60000` | Max reconnect delay (exponential backoff) |
 | | `ping-interval-ms` | `30000` | Heartbeat interval |
-| `fill-quality` | `symbol` | `BTC` | Trading symbol to analyze |
+| `liquidity-quality` | `symbol` | `BTC` | Trading symbol to analyze |
 | | `tick-size` | `0.1` | Minimum price increment |
 | | `ref-price` | `87000.0` | Reference price for impact bps calculation |
 | | `contract-multiplier` | `1` | Volume multiplier |
@@ -89,5 +89,5 @@ Properties in `application.yaml`:
 
 ## Testing
 
-- `FillQualityEngineTest` — 14 unit tests covering window processing, VWAP, impact, delta, quality grades, rolling stats, input validation, defensive copying
-- `HyperliquidFillQualityApplicationTests` — Spring context load test
+- `LiquidityQualityEngineTest` — 14 unit tests covering window processing, VWAP, impact, delta, quality grades, rolling stats, input validation, defensive copying
+- `HyperliquidLiquidityQualityApplicationTests` — Spring context load test
