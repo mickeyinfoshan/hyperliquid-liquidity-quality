@@ -1,0 +1,17 @@
+spring:
+  application:
+    name: hyperliquid-fill-quality
+
+hyperliquid:
+  ws:
+    url: wss://api.hyperliquid.xyz/ws
+    reconnect-delay-ms: 5000
+    max-reconnect-delay-ms: 60000
+    ping-interval-ms: 30000
+
+fill-quality:
+  symbol: BTC
+  tick-size: 0.1
+  ref-price: 87000.0
+  contract-multiplier: 1
+  window-duration-ms: 1000
