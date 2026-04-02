@@ -25,7 +25,7 @@ public record WindowResult(
     public WindowResult {
         uniquePrices = uniquePrices == null ? List.of() : List.copyOf(uniquePrices);
         if (qualityGrade == null) {
-            qualityGrade = QualityGrade.fromPriceLevels(priceLevels);
+            qualityGrade = QualityGrade.fromImpactBps(impactBps);
         }
     }
 }

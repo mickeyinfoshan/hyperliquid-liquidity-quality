@@ -9,7 +9,7 @@ public class LiquidityQualityProperties {
 
     private String symbol = "BTC";
     private double tickSize = 0.1;
-    private double refPrice = 87000.0;
+
     private long contractMultiplier = 1;
     private long windowDurationMs = 1000;
 }

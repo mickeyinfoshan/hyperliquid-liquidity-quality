@@ -8,15 +8,15 @@ public enum QualityGrade {
     POOR(8.0),
     VERY_POOR(Double.MAX_VALUE);
 
-    private final double maxPriceLevels;
+    private final double maxImpactBps;
 
-    QualityGrade(double maxPriceLevels) {
-        this.maxPriceLevels = maxPriceLevels;
+    QualityGrade(double maxImpactBps) {
+        this.maxImpactBps = maxImpactBps;
     }
 
-    public static QualityGrade fromPriceLevels(double priceLevels) {
+    public static QualityGrade fromImpactBps(double impactBps) {
         for (QualityGrade grade : values()) {
-            if (priceLevels <= grade.maxPriceLevels) {
+            if (impactBps <= grade.maxImpactBps) {
                 return grade;
             }
         }

@@ -12,6 +12,6 @@ hyperliquid:
 liquidity-quality:
   symbol: BTC
   tick-size: 0.1
-  ref-price: 87000.0
+
   contract-multiplier: 1
   window-duration-ms: 1000

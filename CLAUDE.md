@@ -77,7 +77,7 @@ Properties in `application.yaml`:
 | | `ping-interval-ms` | `30000` | Heartbeat interval |
 | `liquidity-quality` | `symbol` | `BTC` | Trading symbol to analyze |
 | | `tick-size` | `0.1` | Minimum price increment |
-| | `ref-price` | `87000.0` | Reference price for impact bps calculation |
+
 | | `contract-multiplier` | `1` | Volume multiplier |
 | | `window-duration-ms` | `1000` | Time window length |
 

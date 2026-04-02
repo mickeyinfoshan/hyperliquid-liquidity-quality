@@ -50,7 +50,6 @@ public class LiquidityQualityService implements SmartLifecycle, WsMessageListene
         ProductConfig config = new ProductConfig(
                 properties.getSymbol(),
                 properties.getTickSize(),
-                properties.getRefPrice(),
                 properties.getContractMultiplier()
         );
         this.engine = new LiquidityQualityEngine(config, properties.getWindowDurationMs());

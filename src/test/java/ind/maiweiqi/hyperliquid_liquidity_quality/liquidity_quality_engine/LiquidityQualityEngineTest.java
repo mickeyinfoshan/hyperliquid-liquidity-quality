@@ -16,7 +16,7 @@ class LiquidityQualityEngineTest {
 
     @BeforeEach
     void setUp() {
-        config = new ProductConfig("BTC", 0.1, 50000.0, 1);
+        config = new ProductConfig("BTC", 0.1, 1);
         engine = new LiquidityQualityEngine(config, 1000);
     }
 
@@ -57,7 +57,7 @@ class LiquidityQualityEngineTest {
         assertEquals(5.0, r.sellVolume(), 0.0001);
         assertEquals(8.0, r.delta(), 0.0001);
         assertEquals(3, r.tickCount());
-        assertTrue(r.impactBps() > 0);
+        assertEquals(0.0, r.impactBps()); // first window has no previous VWAP
         assertEquals(List.of(50000.0, 50000.1, 50000.3), r.uniquePrices());
     }
 
@@ -84,19 +84,36 @@ class LiquidityQualityEngineTest {
     }
 
     @Test
-    void processWindow_impactCalculation() {
+    void processWindow_impactCalculation_firstWindowZero() {
         engine.addTick(new Tick(50000.0, 10, 5100, Side.BUY));
         engine.addTick(new Tick(50000.1, 5, 5200, Side.SELL));
 
         WindowResult r = engine.processWindow(6000);
 
-        // impact_bps = priceLevels * tickSize / refPrice * 10000
-        // = 2 * 0.1 / 50000.0 * 10000 = 0.04 bps
-        assertEquals(0.04, r.impactBps(), 0.001);
+        // First window: no previous VWAP, impactBps = 0
+        assertEquals(0.0, r.impactBps(), 0.001);
 
-        // impact_dollar = priceLevels * tickSize * contractMultiplier
+        // impact_dollar is always computed
         // = 2 * 0.1 * 1 = 0.2
         assertEquals(0.2, r.impactDollar(), 0.001);
+    }
+
+    @Test
+    void processWindow_impactCalculation_secondWindowUsesPreviousVwap() {
+        // First window — establishes VWAP
+        engine.addTick(new Tick(50000.0, 10, 5100, Side.BUY));
+        engine.addTick(new Tick(50000.0, 10, 5200, Side.SELL));
+        WindowResult r1 = engine.processWindow(6000);
+        assertEquals(50000.0, r1.vwap(), 0.0001);
+
+        // Second window — uses previous VWAP (50000.0) as refPrice
+        engine.addTick(new Tick(50000.0, 10, 6100, Side.BUY));
+        engine.addTick(new Tick(50000.1, 5, 6200, Side.SELL));
+        WindowResult r2 = engine.processWindow(7000);
+
+        // impact_bps = priceLevels * tickSize / lastVwap * 10000
+        // = 2 * 0.1 / 50000.0 * 10000 = 0.04 bps
+        assertEquals(0.04, r2.impactBps(), 0.001);
     }
 
     @Test
@@ -104,7 +121,7 @@ class LiquidityQualityEngineTest {
         engine.addTick(new Tick(100.0, 10, 5100, Side.BUY));
         engine.addTick(new Tick(200.0, 10, 5200, Side.BUY));
 
-        ProductConfig cfg = new ProductConfig("TEST", 1.0, 100.0, 1);
+        ProductConfig cfg = new ProductConfig("TEST", 1.0, 1);
         LiquidityQualityEngine eng = new LiquidityQualityEngine(cfg, 1000);
         eng.addTick(new Tick(100.0, 10, 5100, Side.BUY));
         eng.addTick(new Tick(200.0, 10, 5200, Side.BUY));
@@ -141,15 +158,15 @@ class LiquidityQualityEngineTest {
 
     @Test
     void qualityGrade_boundaryValues() {
-        assertEquals(QualityGrade.EXCELLENT, QualityGrade.fromPriceLevels(1));
-        assertEquals(QualityGrade.EXCELLENT, QualityGrade.fromPriceLevels(1.5));
-        assertEquals(QualityGrade.GOOD, QualityGrade.fromPriceLevels(2));
-        assertEquals(QualityGrade.GOOD, QualityGrade.fromPriceLevels(3));
-        assertEquals(QualityGrade.FAIR, QualityGrade.fromPriceLevels(4));
-        assertEquals(QualityGrade.FAIR, QualityGrade.fromPriceLevels(5));
-        assertEquals(QualityGrade.POOR, QualityGrade.fromPriceLevels(6));
-        assertEquals(QualityGrade.POOR, QualityGrade.fromPriceLevels(8));
-        assertEquals(QualityGrade.VERY_POOR, QualityGrade.fromPriceLevels(9));
+        assertEquals(QualityGrade.EXCELLENT, QualityGrade.fromImpactBps(1));
+        assertEquals(QualityGrade.EXCELLENT, QualityGrade.fromImpactBps(1.5));
+        assertEquals(QualityGrade.GOOD, QualityGrade.fromImpactBps(2));
+        assertEquals(QualityGrade.GOOD, QualityGrade.fromImpactBps(3));
+        assertEquals(QualityGrade.FAIR, QualityGrade.fromImpactBps(4));
+        assertEquals(QualityGrade.FAIR, QualityGrade.fromImpactBps(5));
+        assertEquals(QualityGrade.POOR, QualityGrade.fromImpactBps(6));
+        assertEquals(QualityGrade.POOR, QualityGrade.fromImpactBps(8));
+        assertEquals(QualityGrade.VERY_POOR, QualityGrade.fromImpactBps(9));
     }
 
     @Test
@@ -165,13 +182,11 @@ class LiquidityQualityEngineTest {
     @Test
     void productConfig_validationRejectsInvalid() {
         assertThrows(IllegalArgumentException.class,
-                () -> new ProductConfig("", 0.1, 100.0, 1));
+                () -> new ProductConfig("", 0.1, 1));
         assertThrows(IllegalArgumentException.class,
-                () -> new ProductConfig("BTC", 0, 100.0, 1));
+                () -> new ProductConfig("BTC", 0, 1));
         assertThrows(IllegalArgumentException.class,
-                () -> new ProductConfig("BTC", 0.1, 0, 1));
-        assertThrows(IllegalArgumentException.class,
-                () -> new ProductConfig("BTC", 0.1, 100.0, 0));
+                () -> new ProductConfig("BTC", 0.1, 0));
     }
 
     @Test

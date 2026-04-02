@@ -13,6 +13,7 @@ public class LiquidityQualityEngine {
     private final List<WindowProcessedListener> listeners = new CopyOnWriteArrayList<>();
     private final LiquidityQualityStats stats = new LiquidityQualityStats();
     private long lastWindowEnd = -1;
+    private Double lastVwap = null;
 
     public LiquidityQualityEngine(ProductConfig config, long windowDurationMs) {
         if (config == null) {
@@ -85,11 +86,13 @@ public class LiquidityQualityEngine {
         double delta = buyVolume - sellVolume;
         double deltaRatio = totalVolume > 0 ? delta / totalVolume : 0.0;
 
-        // Impact cost (CME formula)
-        double impactBps = priceLevels * config.tickSize() / config.refPrice() * 10_000;
+        // Impact cost (CME formula) — use previous window's VWAP as reference price
+        double impactBps = lastVwap != null
+                ? priceLevels * config.tickSize() / lastVwap * 10_000
+                : 0;
         double impactDollar = priceLevels * config.tickSize() * config.contractMultiplier();
 
-        QualityGrade grade = QualityGrade.fromPriceLevels(priceLevels);
+        QualityGrade grade = QualityGrade.fromImpactBps(impactBps);
 
         WindowResult result = new WindowResult(
                 windowStart, windowEnd,
@@ -106,6 +109,7 @@ public class LiquidityQualityEngine {
         );
 
         lastWindowEnd = windowEnd;
+        lastVwap = vwap;
         stats.updateFromWindow(result);
 
         for (WindowProcessedListener listener : listeners) {
